@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { Web3Module } from './web3/web3.module';
 import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { User } from './users/entities/users.entity';
-import { UserSession } from './users/entities/user-session.entity';
 
 @Module({
   imports: [
@@ -27,30 +28,24 @@ import { UserSession } from './users/entities/user-session.entity';
         username: configService.get('DB_USERNAME', 'senmu'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_DATABASE', 'postgres'),
-        entities: [User, UserSession],
+        entities: [User],
         synchronize: configService.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
     
-    // JWT模块配置
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: '7d',
-        },
-      }),
-      inject: [ConfigService],
-    }),
-    
-    // 重要：调整模块导入顺序，首先导入基础模块
+    // 按照依赖关系导入模块
     Web3Module,
     UsersModule,
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    AppService,
+  ],
 })
 export class AppModule {}

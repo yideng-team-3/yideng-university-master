@@ -1,10 +1,7 @@
-import { Injectable, Optional, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/users.entity';
-import { UserSession } from '../users/entities/user-session.entity';
 import { Request } from 'express';
 import { Web3Service } from '../web3/web3.service';
 
@@ -13,8 +10,6 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    @InjectRepository(UserSession)
-    private userSessionsRepository: Repository<UserSession>,
     private web3Service: Web3Service,
   ) {}
 
@@ -49,27 +44,14 @@ export class AuthService {
   }
 
   /**
-   * 验证签名（带过期检查）
+   * 验证签名
    * @param message 要验证的消息
    * @param signature 签名
    * @param address 钱包地址
    * @returns 签名是否有效
    */
   async validateSignature(message: string, signature: string, address: string): Promise<boolean> {
-    // 首先检查签名会话是否存在且未过期
-    const session = await this.userSessionsRepository.findOne({
-      where: { signature }
-    });
-
-    if (session) {
-      // 如果找到会话，检查是否已过期
-      if (new Date() > session.expiresAt) {
-        console.error('签名已过期');
-        return false;
-      }
-    }
-
-    // 验证签名本身
+    // 验证签名
     if (this.web3Service) {
       return this.web3Service.verifySignature(message, signature, address);
     }
@@ -103,62 +85,13 @@ ${nonce}`;
   }
 
   /**
-   * 处理用户会话创建
-   * @param user 用户对象
-   * @param signature 签名
-   * @param req 请求对象
-   * @param expiresInSeconds 会话过期时间（秒）
-   * @returns 登录响应对象
-   */
-  private async createUserSession(
-    user: User,
-    signature: string,
-    req: Request,
-    expiresInSeconds: number = 604800 // 默认7天 (7*24*60*60)
-  ): Promise<any> {
-    // 计算过期时间
-    const expiresAt = new Date();
-    expiresAt.setTime(expiresAt.getTime() + expiresInSeconds * 1000);
-    
-    // 创建会话记录
-    const session = this.userSessionsRepository.create({
-      userId: String(user.id),
-      signature,
-      expiresAt,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
-    
-    await this.userSessionsRepository.save(session);
-    
-    // 生成JWT
-    const payload = { 
-      sub: user.id, 
-      walletAddress: user.walletAddress,
-      username: user.username
-    };
-    
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        walletAddress: user.walletAddress,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        ensName: user.ensName,
-      },
-    };
-  }
-
-  /**
-   * Web3 钱包一键登录
+   * Web3 钱包一键登录 - 无状态实现
    * @param walletAddress 钱包地址
    * @param signature 签名
    * @param nonce 用于生成签名的nonce
    * @param req 请求对象
    * @param avatarUrl 可选的头像URL
    * @param ensName 可选的ENS名称
-   * @param expiresInSeconds 签名过期时间（秒）
    * @returns 登录信息
    */
   async web3Login(
@@ -168,13 +101,12 @@ ${nonce}`;
     req: Request,
     avatarUrl?: string,
     ensName?: string,
-    expiresInSeconds: number = 604800 // 默认7天
   ): Promise<any> {
     // 创建消息
     const message = this.createSignMessage(walletAddress, nonce);
     
     // 验证签名合法性
-    const isValid = await this.web3Service.verifySignature(message, signature, walletAddress);
+    const isValid = await this.validateSignature(message, signature, walletAddress);
     
     if (!isValid) {
       throw new UnauthorizedException('签名验证失败');
@@ -204,8 +136,23 @@ ${nonce}`;
       await this.usersService.save(user);
     }
 
-    // 创建会话并返回登录信息
-    return this.createUserSession(user, signature, req, expiresInSeconds);
+    // 生成JWT
+    const payload = { 
+      sub: user.id, 
+      walletAddress: user.walletAddress,
+      username: user.username
+    };
+    
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        walletAddress: user.walletAddress,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        ensName: user.ensName,
+      },
+    };
   }
 
   /**
@@ -229,70 +176,32 @@ ${nonce}`;
   }
 
   /**
-   * 清理过期的用户会话
-   * @returns 清理的会话数量
-   */
-  async cleanupExpiredSessions(): Promise<number> {
-    const now = new Date();
-    const result = await this.userSessionsRepository
-      .createQueryBuilder()
-      .delete()
-      .where("expiresAt < :now", { now })
-      .execute();
-    
-    return result.affected || 0;
-  }
-
-  /**
-   * 检查用户是否已登录
-   * @param walletAddress 钱包地址
+   * 检查用户是否已登录 - 根据JWT验证
+   * @param token JWT令牌
    * @returns 用户登录状态信息
    */
-  async checkLoginStatus(walletAddress: string): Promise<{isLoggedIn: boolean; user?: any; accessToken?: string; message: string}> {
+  async checkLoginStatus(token: string): Promise<{isLoggedIn: boolean; user?: any; message: string}> {
     try {
-      // 查找拥有此钱包地址的用户
-      const user = await this.usersService.findByWalletAddress(walletAddress);
+      if (!token) {
+        return { 
+          isLoggedIn: false, 
+          message: '未提供令牌' 
+        };
+      }
+      
+      // 验证令牌
+      const user = await this.validateToken(token);
       
       if (!user) {
         return { 
           isLoggedIn: false, 
-          message: '未找到该钱包地址关联的用户' 
+          message: '无效的令牌或用户不存在' 
         };
       }
       
-      // 查找该用户的最新会话
-      const session = await this.userSessionsRepository.findOne({
-        where: { userId: String(user.id) },
-        order: { createdAt: 'DESC' }
-      });
-      
-      if (!session) {
-        return { 
-          isLoggedIn: false, 
-          message: '未找到有效的登录会话' 
-        };
-      }
-      
-      // 检查会话是否过期
-      if (new Date() > session.expiresAt) {
-        return { 
-          isLoggedIn: false, 
-          message: '登录会话已过期，请重新登录' 
-        };
-      }
-      
-      // 生成新的JWT令牌
-      const payload = { 
-        sub: user.id, 
-        walletAddress: user.walletAddress,
-        username: user.username
-      };
-      const accessToken = this.jwtService.sign(payload);
-      
-      // 会话有效，返回用户信息和访问令牌
+      // 令牌有效，返回用户信息
       return {
         isLoggedIn: true,
-        accessToken,
         user: {
           id: user.id,
           walletAddress: user.walletAddress,

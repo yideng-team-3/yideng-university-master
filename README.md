@@ -8,7 +8,7 @@ pnpm install
 pnpm start
 ```
 
-## 签名登录
+## Web3 无状态登录
 
 1. 获取 nonce
 
@@ -54,7 +54,56 @@ POST /auth/web3-login
 }
 ```
 
-3. 后续调用带上 `accessToken`
+3. 后续调用带上 `Authorization` 头，使用 Bearer 令牌认证
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## 使用JWT保护API接口
+
+所有需要身份验证的接口都需要在请求头中携带JWT令牌：
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 获取用户个人资料示例
+
+```js
+GET /auth/profile
+
+// 请求头
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+// 响应
+{
+  "user": {
+    "id": 1,
+    "walletAddress": "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+    "username": "wallet_5B38Da_1680123456789"
+  }
+}
+```
+
+### 在控制器中使用当前用户信息
+
+```typescript
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+
+@Controller('some-resource')
+export class SomeController {
+  @Get()
+  getSomeResource(@CurrentUser() user) {
+    // user 包含当前登录用户的信息
+    return { message: `Hello, ${user.username}!` };
+  }
+}
+```
 
 ## SQL
 
@@ -65,23 +114,11 @@ CREATE TABLE users (
   nonce VARCHAR(64) NOT NULL,
   username VARCHAR(100),
   avatar_url TEXT,
+  ens_name VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   last_login_at TIMESTAMP WITH TIME ZONE
 );
-
--- 该表暂时先不用
-CREATE TABLE user_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  signature TEXT NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  ip_address VARCHAR(50),
-  user_agent TEXT,
-  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
 
 users 表：
 
@@ -90,16 +127,8 @@ wallet_address - 用户的以太坊钱包地址
 nonce - 用于签名验证的随机字符串，每次登录尝试都会更新
 username - 用户名（可选）
 avatar_url - 头像链接（可选）
+ens_name - 以太坊域名服务名称（可选）
 created_at - 账户创建时间
 updated_at - 账户信息更新时间
 last_login_at - 最后登录时间
-
-user_sessions 表：
-
-id - 会话唯一标识
-user_id - 关联到用户表的外键
-signature - 用户签名
-expires_at - 会话过期时间
-created_at - 会话创建时间
-ip_address - 用户 IP 地址
-user_agent - 用户浏览器信息
+```

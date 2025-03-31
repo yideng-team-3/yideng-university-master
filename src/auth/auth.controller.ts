@@ -1,12 +1,14 @@
-import { Body, Controller, Post, Req, UnauthorizedException, UseGuards, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, Req, UnauthorizedException, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Public } from './decorators/public.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
 import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('nonce')
   async getNonce(@Body() body: { walletAddress: string }) {
     const { walletAddress } = body;
@@ -25,6 +27,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('web3-login')
   async web3Login(
     @Body() body: { 
@@ -52,18 +55,22 @@ export class AuthController {
     );
   }
 
-  @Get('check-login-status')
-  async checkLoginStatus(@Query('walletAddress') walletAddress: string) {
-    if (!walletAddress) {
-      throw new UnauthorizedException('缺少钱包地址');
-    }
-    
-    return this.authService.checkLoginStatus(walletAddress);
+  @Get('profile')
+  async getProfile(@CurrentUser() user) {
+    return { user };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Get('check-login-status')
+  async checkLoginStatus(@Query('token') token: string) {
+    if (!token) {
+      throw new UnauthorizedException('缺少令牌');
+    }
+    
+    return this.authService.checkLoginStatus(token);
+  }
+
   @Post('logout')
   async logout() {
-    return { message: 'Logged out successfully' };
+    return { message: '登出成功' };
   }
 }
