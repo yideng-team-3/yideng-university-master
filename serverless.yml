@@ -1,0 +1,78 @@
+service: web3-university
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'us-east-2'}
+  stage: ${opt:stage, 'dev'}
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    DYNAMODB_USERS_TABLE: ${self:service}-${self:provider.stage}-users
+    JWT_SECRET: ${env:JWT_SECRET, ssm:/web3-university/${self:provider.stage}/jwt-secret~true}
+  memorySize: 1024
+  timeout: 30
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+          Resource:
+            - !GetAtt UsersTable.Arn
+            - !Join ['', [!GetAtt UsersTable.Arn, '/index/*']]
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: true
+
+resources:
+  Resources:
+    # 用户表
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_USERS_TABLE}
+        BillingMode: PAY_PER_REQUEST # 按需计费模式
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: walletAddress
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: walletAddressIndex
+            KeySchema:
+              - AttributeName: walletAddress
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+  - serverless-dotenv-plugin
+
+custom:
+  dotenv:
+    path: ./.env.${opt:env, self:provider.stage}
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+    packager: 'yarn'
+    packagerOptions:
+      scripts:
+        - rm -rf node_modules/aws-sdk

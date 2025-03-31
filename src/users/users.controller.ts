@@ -10,7 +10,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile/:id')
-  async findOne(@Param('id') id: number): Promise<Partial<User> | null> {
+  async findOne(@Param('id') id: string): Promise<Partial<User> | null> {
     const user = await this.usersService.findOne(id);
     if (!user) {
       return null;
@@ -22,7 +22,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 }
