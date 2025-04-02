@@ -1,5 +1,12 @@
 service: web3-university
 
+layers:
+  dependencies:
+    path: layer
+    description: "Node.js dependencies layer"
+    compatibleRuntimes:
+      - nodejs20.x
+
 provider:
   name: aws
   runtime: nodejs20.x
@@ -8,12 +15,19 @@ provider:
   environment:
     NODE_ENV: ${self:provider.stage}
     DYNAMODB_USERS_TABLE: ${self:service}-${self:provider.stage}-users
-    JWT_SECRET: ${env:JWT_SECRET, ssm:/web3-university/${self:provider.stage}/jwt-secret~true}
+    # JWT_SECRET: ${env:JWT_SECRET, ssm:/web3-university/${self:provider.stage}/jwt-secret~true}
+    JWT_SECRET: ${env:JWT_SECRET, 'dev_secret_key_please_change_in_production'}
+  layers:
+    - {Ref: DependenciesLambdaLayer}
   memorySize: 1024
   timeout: 30
   iam:
     role:
       statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:ListTables
+          Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/*"
         - Effect: Allow
           Action:
             - dynamodb:Query
@@ -26,11 +40,13 @@ provider:
             - dynamodb:BatchWriteItem
           Resource:
             - !GetAtt UsersTable.Arn
-            - !Join ['', [!GetAtt UsersTable.Arn, '/index/*']]
+            - !Join ["", [!GetAtt UsersTable.Arn, "/index/*"]]
 
 functions:
   api:
     handler: dist/lambda.handler
+    layers:
+      - {Ref: DependenciesLambdaLayer}
     events:
       - http:
           path: /{proxy+}
@@ -64,15 +80,16 @@ resources:
 plugins:
   - serverless-offline
   - serverless-webpack
-  - serverless-dotenv-plugin
+  # - serverless-dotenv-plugin
 
 custom:
   dotenv:
     path: ./.env.${opt:env, self:provider.stage}
   webpack:
     webpackConfig: ./webpack.config.js
-    includeModules: true
-    packager: 'yarn'
+    includeModules: false
+    # includeModules: true
+    packager: "yarn"
     packagerOptions:
       scripts:
         - rm -rf node_modules/aws-sdk

@@ -16,7 +16,9 @@ module.exports = {
     filename: '[name].js',
   },
   target: 'node',
-  externals: [nodeExternals()],
+  externals: [nodeExternals({
+    allowlist: [],
+  })],
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin({ 
