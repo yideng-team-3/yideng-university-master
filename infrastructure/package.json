@@ -1,0 +1,17 @@
+{
+  "name": "web3-university-infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "clean": "rm -rf cdk.out"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "aws-cdk": "^2.128.0",
+    "aws-cdk-lib": "^2.128.0",
+    "constructs": "^10.3.0",
+    "typescript": "^5.3.3"
+  }
+}

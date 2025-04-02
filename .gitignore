@@ -4,6 +4,7 @@ dist
 layer
 .webpack
 .serverless
+infrastructure/cdk.out
 
 .env
 .env.*
