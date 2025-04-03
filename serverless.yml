@@ -51,7 +51,20 @@ functions:
       - http:
           path: /{proxy+}
           method: any
-          cors: true
+          cors:
+            origin: 'http://localhost:3000,https://senmu.site,https://biglove.top'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Origin
+              - Accept
+            allowMethods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS'
+            allowCredentials: true
+            maxAge: 600
 
 resources:
   Resources:

@@ -10,6 +10,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+
+    // 对 OPTIONS 请求直接放行
+    if (request.method === 'OPTIONS') {
+      return true;
+    }
     // 检查是否为公开接口
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
