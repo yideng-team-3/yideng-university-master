@@ -18,20 +18,6 @@ export class AppController {
     return this.appService.getWelcome();
   }
 
-  @Get('info')
-  @ApiOperation({ summary: 'API information', description: 'Returns information about the API' })
-  @ApiResponse({ status: 200, description: 'API information' })
-  getAppInfo(): object {
-    return this.appService.getAppInfo();
-  }
-
-  @Get('health')
-  @ApiOperation({ summary: 'Health check', description: 'Checks the health status of the API' })
-  @ApiResponse({ status: 200, description: 'Health status' })
-  healthCheck(): object {
-    return this.appService.healthCheck();
-  }
-
   @Public()
   @Get('db-test')
   @ApiOperation({ summary: '数据库连接测试', description: '测试数据库连接是否正常' })
