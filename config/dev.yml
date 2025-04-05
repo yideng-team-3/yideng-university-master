@@ -1,0 +1,5 @@
+region: us-east-2
+memorySize: 1024
+timeout: 29 
+corsOrigins: 'http://localhost:3000'
+logLevel: DEBUG

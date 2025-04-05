@@ -19,17 +19,14 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "clean": "rm -rf .webpack dist layer",
-    "offline": "yarn clean && yarn build && IS_OFFLINE=true serverless offline --httpPort 3001",
+    "setup:local": "bash scripts/setup-local.sh",
+    "offline": "yarn clean && yarn build && IS_OFFLINE=true serverless offline --httpPort 3001 --env local",
     "deploy:dev": "yarn clean && yarn build && node scripts/layer-build.js && serverless deploy --stage dev --aws-profile senmu",
-    "deploy:prod": "yarn clean && yarn build && node scripts/layer-build.js && serverless deploy --stage prod",
-    "deploy:layer": "node scripts/layer-build.js && serverless deploy function -f api",
+    "deploy:prod": "yarn clean && yarn build && node scripts/layer-build.js && serverless deploy --stage prod --aws-profile senmu",
+    "deploy:layer": "node scripts/layer-build.js && serverless deploy function -f api --aws-profile senmu --stage dev",
     "sls:package": "serverless package"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.523.0",
-    "@aws-sdk/credential-providers": "^3.778.0",
-    "@aws-sdk/lib-dynamodb": "^3.523.0",
-    "@aws-sdk/util-dynamodb": "^3.523.0",
     "aws-serverless-express": "^3.4.0",
     "@nestjs/common": "^10.3.3",
     "@nestjs/config": "^3.2.0",
@@ -55,6 +52,10 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.523.0",
+    "@aws-sdk/credential-providers": "^3.778.0",
+    "@aws-sdk/lib-dynamodb": "^3.523.0",
+    "@aws-sdk/util-dynamodb": "^3.523.0",
     "@nestjs/cli": "^10.3.2",
     "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^10.3.3",

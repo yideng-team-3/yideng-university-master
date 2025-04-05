@@ -1,0 +1,5 @@
+region: us-east-2
+memorySize: 2048
+timeout: 29
+corsOrigins: 'https://senmu.site,https://biglove.top'
+logLevel: ERROR

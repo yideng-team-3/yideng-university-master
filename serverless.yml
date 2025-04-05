@@ -10,17 +10,17 @@ layers:
 provider:
   name: aws
   runtime: nodejs20.x
-  region: ${opt:region, 'us-east-2'}
+  region: ${file(./config/${self:provider.stage}.yml):region, 'us-east-2'}
   stage: ${opt:stage, 'dev'}
   environment:
     NODE_ENV: ${self:provider.stage}
     DYNAMODB_USERS_TABLE: ${self:service}-${self:provider.stage}-users
-    # JWT_SECRET: ${env:JWT_SECRET, ssm:/web3-university/${self:provider.stage}/jwt-secret~true}
-    JWT_SECRET: ${env:JWT_SECRET, 'dev_secret_key_please_change_in_production'}
+    LOG_LEVEL: ${file(./config/${self:provider.stage}.yml):logLevel, 'INFO'}
+    JWT_SECRET: ${env:JWT_SECRET, 'fallback_secret_key'}
   layers:
     - {Ref: DependenciesLambdaLayer}
-  memorySize: 1024
-  timeout: 30
+  memorySize: ${file(./config/${self:provider.stage}.yml):memorySize, 1024}
+  timeout: ${file(./config/${self:provider.stage}.yml):timeout, 29}
   iam:
     role:
       statements:
@@ -62,7 +62,6 @@ functions:
               - X-Amz-Security-Token
               - Origin
               - Accept
-            allowMethods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS'
             allowCredentials: true
             maxAge: 600
 
@@ -93,7 +92,7 @@ resources:
 plugins:
   - serverless-offline
   - serverless-webpack
-  # - serverless-dotenv-plugin
+  - serverless-dotenv-plugin
 
 custom:
   dotenv:

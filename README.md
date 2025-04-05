@@ -1,13 +1,5 @@
 # yideng-university-master
 
-## 启动
-
-```shell
-pnpm install
-
-pnpm start
-```
-
 ## Web3 无状态登录
 
 1. 获取 nonce
@@ -88,23 +80,6 @@ GET /auth/profile
 }
 ```
 
-### 在控制器中使用当前用户信息
-
-```typescript
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-
-@Controller('some-resource')
-export class SomeController {
-  @Get()
-  getSomeResource(@CurrentUser() user) {
-    // user 包含当前登录用户的信息
-    return { message: `Hello, ${user.username}!` };
-  }
-}
-```
-
 ## SQL
 
 ```sql
@@ -135,31 +110,7 @@ last_login_at - 最后登录时间
 
 ## 本地 DynamoDB 测试指南
 
-### 1. 安装 DynamoDB Local
-
-#### 使用 Docker 安装
-
-```bash
-# 拉取并运行 DynamoDB 本地版本
-docker run -p 8000:8000 amazon/dynamodb-local
-```
-
-### 2. 配置环境变量
-
-确保 `.env` 文件中有以下配置：
-
-```properties
-DB_TYPE=dynamodb
-AWS_ACCESS_KEY_ID=local
-AWS_SECRET_ACCESS_KEY=local
-AWS_REGION=us-east-2
-IS_OFFLINE=true
-DYNAMODB_USERS_TABLE=web3-university-dev-users
-```
-
-### 3. 创建 DynamoDB 表
-
-可以通过 AWS CLI 创建必要的表结构：
+### 1. 安装 aws 并配置
 
 ```bash
 # 安装 AWS CLI (如果尚未安装)
@@ -169,21 +120,13 @@ npm install -g aws-cli
 aws configure set aws_access_key_id local
 aws configure set aws_secret_access_key local
 aws configure set region us-east-2
-
-# 创建用户表
-aws dynamodb create-table \
-  --table-name web3-university-dev-users \
-  --attribute-definitions \
-    AttributeName=id,AttributeType=S \
-    AttributeName=walletAddress,AttributeType=S \
-  --key-schema AttributeName=id,KeyType=HASH \
-  --global-secondary-indexes \
-    IndexName=walletAddressIndex,KeySchema=["{AttributeName=walletAddress,KeyType=HASH}"],Projection="{ProjectionType=ALL}" \
-  --billing-mode PAY_PER_REQUEST \
-  --endpoint-url http://localhost:8000
 ```
 
-### 4. 使用 Serverless Offline 运行应用
+### 2. 运行 yarn setup:local
+
+该命令会安装好 `docker` 并创建 dynamo db 表
+
+### 3. 使用 Serverless Offline 运行应用
 
 ```bash
 # 安装依赖
@@ -193,4 +136,21 @@ yarn install
 yarn run offline
 ```
 
-### 5. 启动前端应用调用后端接口进行测试
+### 4. 启动前端应用调用后端接口进行测试
+
+## 阶段部署指南
+
+### 1. 登录 aws
+
+### 2. 创建 env.dev/prod 文件
+
+1. 生成 jwt_secret
+2. 添加生成的密钥到 `env.dev/prod` 文件
+
+添加内容：
+
+```
+JWT_SECRET=xxx
+```
+
+### 3. 运行 yarn deploy:dev/prod

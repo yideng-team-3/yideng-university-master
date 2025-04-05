@@ -29,21 +29,4 @@ fs.writeFileSync(
 console.log('📦 安装生产依赖...');
 execSync(`cd ${nodejsPath} && yarn install --production`, { stdio: 'inherit' });
 
-// 删除不需要打包的依赖
-console.log('🗑️  删除 AWS SDK 相关依赖...');
-const removePackages = [
-  'aws-sdk',
-  '@aws-sdk/client-dynamodb',
-  '@aws-sdk/lib-dynamodb',
-  '@aws-sdk/util-dynamodb',
-  '@aws-sdk/credential-providers'
-];
-
-removePackages.forEach(pkg => {
-  const pkgPath = path.join(nodejsPath, 'node_modules', pkg);
-  if (fs.existsSync(pkgPath)) {
-    execSync(`rm -rf ${pkgPath}`);
-  }
-});
-
 console.log('✅ Lambda Layer 构建完成！');
