@@ -1,0 +1,589 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getWelcome",
+        "summary": "Welcome message",
+        "description": "Returns a welcome message for the API",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The welcome message"
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/db-test": {
+      "get": {
+        "operationId": "AppController_testDatabaseConnection",
+        "summary": "数据库连接测试",
+        "description": "测试数据库连接是否正常",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "数据库连接状态"
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/users/profile/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/auth/nonce": {
+      "post": {
+        "operationId": "AuthController_getNonce",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/auth/web3-login": {
+      "post": {
+        "operationId": "AuthController_web3Login",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/auth/check-login-status": {
+      "get": {
+        "operationId": "AuthController_checkLoginStatus",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/courses": {
+      "post": {
+        "operationId": "CoursesController_create",
+        "summary": "创建新课程",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功"
+          },
+          "400": {
+            "description": "请求参数验证失败"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CoursesController_findAll",
+        "summary": "获取所有课程",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/courses/{id}": {
+      "get": {
+        "operationId": "CoursesController_findOne",
+        "summary": "获取课程详情",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "课程ID",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取课程信息"
+          },
+          "404": {
+            "description": "课程不存在"
+          }
+        },
+        "tags": [
+          "courses"
+        ]
+      },
+      "patch": {
+        "operationId": "CoursesController_update",
+        "summary": "更新课程信息",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "课程ID",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "课程更新成功"
+          },
+          "400": {
+            "description": "请求参数验证失败"
+          },
+          "404": {
+            "description": "课程不存在"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CoursesController_remove",
+        "summary": "删除课程",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "课程ID",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "课程删除成功"
+          },
+          "404": {
+            "description": "课程不存在"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/courses/web2/{web2CourseId}": {
+      "get": {
+        "operationId": "CoursesController_findByWeb2Id",
+        "summary": "通过Web2课程ID获取课程",
+        "parameters": [
+          {
+            "name": "web2CourseId",
+            "required": true,
+            "in": "path",
+            "description": "Web2课程ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取课程信息"
+          },
+          "404": {
+            "description": "课程不存在"
+          }
+        },
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/courses/publish-onchain": {
+      "post": {
+        "operationId": "CoursesController_publishOnChain",
+        "summary": "将课程发布到区块链",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishCourseOnchainDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发布成功"
+          },
+          "400": {
+            "description": "发布失败或参数错误"
+          },
+          "404": {
+            "description": "课程不存在"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/courses/upload/presigned-url": {
+      "post": {
+        "operationId": "CoursesController_getPresignedUrl",
+        "summary": "获取课程内容上传预签名URL",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功获取预签名URL"
+          },
+          "400": {
+            "description": "参数错误"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/courses/upload/video": {
+      "post": {
+        "operationId": "CoursesController_uploadVideo",
+        "summary": "直接上传视频文件",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "视频上传成功"
+          },
+          "400": {
+            "description": "上传失败"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/courses/upload/thumbnail": {
+      "post": {
+        "operationId": "CoursesController_uploadThumbnail",
+        "summary": "直接上传缩略图文件",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "缩略图上传成功"
+          },
+          "400": {
+            "description": "上传失败"
+          }
+        },
+        "tags": [
+          "courses"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Web3 University API",
+    "description": "Web3大学平台API文档",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "认证相关"
+    },
+    {
+      "name": "users",
+      "description": "用户相关"
+    },
+    {
+      "name": "courses",
+      "description": "课程相关"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateCourseDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "课程标题",
+            "example": "Web3入门课程"
+          },
+          "description": {
+            "type": "string",
+            "description": "课程描述",
+            "example": "这是一门Web3入门课程，介绍区块链基础知识"
+          },
+          "contentUrl": {
+            "type": "string",
+            "description": "课程内容URL（S3地址）",
+            "example": "https://bucket-name.s3.region.amazonaws.com/courses/video.mp4"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "description": "课程缩略图URL",
+            "example": "https://bucket-name.s3.region.amazonaws.com/thumbnails/image.jpg"
+          },
+          "creatorAddress": {
+            "type": "string",
+            "description": "创建者钱包地址",
+            "example": "0x1234..."
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "contentUrl",
+          "creatorAddress"
+        ]
+      },
+      "UpdateCourseDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "课程标题",
+            "example": "Web3入门课程"
+          },
+          "description": {
+            "type": "string",
+            "description": "课程描述",
+            "example": "这是一门Web3入门课程，介绍区块链基础知识"
+          },
+          "contentUrl": {
+            "type": "string",
+            "description": "课程内容URL（S3地址）",
+            "example": "https://bucket-name.s3.region.amazonaws.com/courses/video.mp4"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "description": "课程缩略图URL",
+            "example": "https://bucket-name.s3.region.amazonaws.com/thumbnails/image.jpg"
+          },
+          "creatorAddress": {
+            "type": "string",
+            "description": "创建者钱包地址",
+            "example": "0x1234..."
+          }
+        }
+      },
+      "PublishCourseOnchainDto": {
+        "type": "object",
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "description": "课程ID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "price": {
+            "type": "number",
+            "description": "课程价格(YD代币)",
+            "example": 100
+          }
+        },
+        "required": [
+          "courseId",
+          "price"
+        ]
+      }
+    }
+  }
+}

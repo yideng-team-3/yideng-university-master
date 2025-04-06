@@ -55,11 +55,13 @@ export class AuthController {
     );
   }
 
+  @Public()
   @Get('profile')
   async getProfile(@CurrentUser() user) {
     return { user };
   }
 
+  @Public()
   @Get('check-login-status')
   async checkLoginStatus(@Query('token') token: string) {
     if (!token) {

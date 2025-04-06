@@ -15,6 +15,8 @@ provider:
   environment:
     NODE_ENV: ${self:provider.stage}
     DYNAMODB_USERS_TABLE: ${self:service}-${self:provider.stage}-users
+    DYNAMODB_COURSES_TABLE: ${self:service}-${self:provider.stage}-courses
+    S3_BUCKET_NAME: ${self:service}-${self:provider.stage}
     LOG_LEVEL: ${file(./config/${self:provider.stage}.yml):logLevel, 'INFO'}
     JWT_SECRET: ${env:JWT_SECRET, 'fallback_secret_key'}
   layers:
@@ -41,6 +43,15 @@ provider:
           Resource:
             - !GetAtt UsersTable.Arn
             - !Join ["", [!GetAtt UsersTable.Arn, "/index/*"]]
+            - !GetAtt CoursesTable.Arn
+            - !Join ["", [!GetAtt CoursesTable.Arn, "/index/*"]]
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: 
+            - !Join ["", ["arn:aws:s3:::", "${self:service}-${self:provider.stage}", "/*"]]
 
 functions:
   api:
@@ -88,6 +99,47 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+    
+    # 课程表 - 极简表结构
+    CoursesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_COURSES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: web2CourseId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: web2CourseIdIndex
+            KeySchema:
+              - AttributeName: web2CourseId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+    
+    # S3 存储桶
+    ContentBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedOrigins:
+                - "*"
+              MaxAge: 3000
 
 plugins:
   - serverless-offline
@@ -100,7 +152,6 @@ custom:
   webpack:
     webpackConfig: ./webpack.config.js
     includeModules: false
-    # includeModules: true
     packager: "yarn"
     packagerOptions:
       scripts:

@@ -52,6 +52,24 @@ aws dynamodb create-table \
   --endpoint-url http://localhost:8000 \
   --region us-east-2 || echo "📋 用户表已存在，跳过创建。"
 
+# 创建本地课程表
+echo "📝 创建本地课程表..."
+aws dynamodb create-table \
+  --table-name web3-university-dev-courses \
+  --attribute-definitions \
+    AttributeName=id,AttributeType=S \
+    AttributeName=web2CourseId,AttributeType=S \
+  --key-schema AttributeName=id,KeyType=HASH \
+  --global-secondary-indexes \
+    IndexName=web2CourseIdIndex,KeySchema=["{AttributeName=web2CourseId,KeyType=HASH}"],Projection="{ProjectionType=ALL}" \
+  --billing-mode PAY_PER_REQUEST \
+  --endpoint-url http://localhost:8000 \
+  --region us-east-2 || echo "📋 课程表已存在，跳过创建。"
+
+# 创建uploads目录
+echo "📁 创建上传目录..."
+mkdir -p uploads
+
 # 创建.env.local文件（如果不存在）
 if [ ! -f .env.local ]; then
   echo "📄 创建本地环境配置文件 .env.local..."
@@ -61,6 +79,8 @@ NODE_ENV=development
 IS_OFFLINE=true
 DB_TYPE=dynamodb
 DYNAMODB_USERS_TABLE=web3-university-dev-users
+DYNAMODB_COURSES_TABLE=web3-university-dev-courses
+S3_BUCKET_NAME=web3-university-dev
 REGION=us-east-2
 APP_NAME=Web3 University Dev
 JWT_SECRET=local_development_secret_key_please_change_in_production
