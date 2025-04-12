@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
+import * as contractJSON from './CourseMarket.json';
 
 @Injectable()
 export class CourseContractService {
@@ -14,45 +15,16 @@ export class CourseContractService {
     public readonly configService: ConfigService // 改为public以便其他服务可以访问
   ) {
     // 初始化网络连接和合约
-    const rpcUrl = this.configService.get<string>('BLOCKCHAIN_RPC_URL', 'https://goerli.infura.io/v3/your-infura-key');
-    this.contractAddress = this.configService.get<string>('COURSE_CONTRACT_ADDRESS', '');
+    // 获取RPC URL和合约地址
+    const rpcUrl = this.configService.get<string>('BLOCKCHAIN_RPC_URL', 'https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID');
+    this.contractAddress = this.configService.get<string>('COURSE_CONTRACT_ADDRESS', '0x436CbE7D8DC5593B3B7B137698a37212f4a4227a');
     
-    // 简化的ABI，只包含我们需要的功能
-    this.contractAbi = [
-      // addCourse函数
-      {
-        "inputs": [
-          { "internalType": "string", "name": "web2CourseId", "type": "string" },
-          { "internalType": "string", "name": "name", "type": "string" },
-          { "internalType": "uint256", "name": "price", "type": "uint256" }
-        ],
-        "name": "addCourse",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      // courseCount变量
-      {
-        "inputs": [],
-        "name": "courseCount",
-        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      // CourseAdded事件
-      {
-        "anonymous": false,
-        "inputs": [
-          { "indexed": true, "internalType": "uint256", "name": "courseId", "type": "uint256" },
-          { "indexed": false, "internalType": "string", "name": "web2CourseId", "type": "string" },
-          { "indexed": false, "internalType": "string", "name": "name", "type": "string" }
-        ],
-        "name": "CourseAdded",
-        "type": "event"
-      }
-    ];
-    
+    // 导入完整的ABI
     try {
+      // const contractJson = require('./CourseMarket.json');
+      // console.log('合约ABI:', contractJSON.abi);
+      this.contractAbi = contractJSON.abi;
+      
       // 创建provider
       this.provider = new ethers.JsonRpcProvider(rpcUrl);
       
@@ -82,7 +54,15 @@ export class CourseContractService {
         throw new Error('合约未初始化');
       }
       
-      const privateKey = this.configService.get<string>('CONTRACT_PRIVATE_KEY');
+      // 先检查课程是否已经存在
+      const exists = await this.checkCourseExists(web2CourseId);
+      if (exists) {
+        this.logger.warn(`课程已存在于区块链上: ${web2CourseId}`);
+        return false;
+      }
+      
+      // 这里传入的私钥应该是创建者的钱包地址
+      const privateKey = this.configService.get<string>('CONTRACT_PRIVATE_KEY', '');
       if (!privateKey) {
         // 模拟环境，直接返回成功
         this.logger.log(`模拟添加课程成功: ${web2CourseId}`);
@@ -93,13 +73,14 @@ export class CourseContractService {
       const wallet = new ethers.Wallet(privateKey, this.provider);
       
       // 连接合约
-      const contractWithSigner = this.contract.connect(wallet) as ethers.Contract;
+      const contractWithSigner = this.contract.connect(wallet);
       
       // 将价格转换为wei
       const priceInWei = ethers.parseEther(price.toString());
       
-      // 调用合约方法 - 使用类型断言解决类型错误
-      const tx = await (contractWithSigner as any).addCourse(web2CourseId, name, priceInWei);
+      // 调用合约方法添加课程
+      // @ts-ignore
+      const tx = await contractWithSigner.addCourse(web2CourseId, name, priceInWei);
       await tx.wait();
       
       this.logger.log(`课程添加成功: ${web2CourseId}`);
@@ -117,8 +98,21 @@ export class CourseContractService {
    * @returns 是否存在
    */
   async checkCourseExists(web2CourseId: string): Promise<boolean> {
-    // 由于合约没有直接提供检查的方法，这里实现一个模拟方法
-    // 在实际应用中，可以通过查询web2ToCourseId映射来实现
-    return true;
+    try {
+      console.log('检查课程存在性:', this.contract);
+      if (!this.contract) {
+        throw new Error('合约未初始化');
+      }
+      
+      // 调用web2ToCourseId映射查询课程ID
+      const courseId = await this.contract.web2ToCourseId(web2CourseId);
+      
+      // 如果courseId为0，则表示课程不存在（在Solidity中，未赋值的mapping默认返回0）
+      // 使用大于0判断是否存在
+      return courseId > 0;
+    } catch (error) {
+      this.logger.error(`检查课程存在性失败: ${error.message}`, error.stack);
+      return false;
+    }
   }
 }

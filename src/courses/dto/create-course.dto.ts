@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUrl, MinLength, MaxLength, Matches, IsEthereumAddress } from 'class-validator';
+import { IsString, IsOptional, IsUrl, MinLength, MaxLength, Matches, IsEthereumAddress, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCourseDto {
@@ -15,17 +15,20 @@ export class CreateCourseDto {
   description?: string;
 
   @ApiProperty({ description: '课程内容URL（S3地址）', example: 'https://bucket-name.s3.region.amazonaws.com/courses/video.mp4' })
+  @ValidateIf(o => !o.contentUrl.includes('localhost'))
   @IsUrl({}, { message: '内容URL格式不正确' })
   @Matches(/\.(mp4|webm|mov|avi)$/i, { message: '内容URL必须是视频文件链接(.mp4, .webm, .mov, .avi)' })
   contentUrl: string;
 
   @ApiProperty({ description: '课程缩略图URL', required: false, example: 'https://bucket-name.s3.region.amazonaws.com/thumbnails/image.jpg' })
   @IsOptional()
+  @ValidateIf(o => o.thumbnailUrl && !o.thumbnailUrl.includes('localhost'))
   @IsUrl({}, { message: '缩略图URL格式不正确' })
   @Matches(/\.(jpg|jpeg|png|gif|webp)$/i, { message: '缩略图URL必须是图片文件链接(.jpg, .jpeg, .png, .gif, .webp)' })
   thumbnailUrl?: string;
 
   @ApiProperty({ description: '创建者钱包地址', required: true, example: '0x1234...' })
+  @ValidateIf(o => !process.env.IS_OFFLINE && !process.env.USE_LOCALSTACK)
   @IsEthereumAddress({ message: '创建者钱包地址必须是有效的以太坊地址' })
   creatorAddress: string;
 }

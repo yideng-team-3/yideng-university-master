@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler, Context, APIGatewayProxyEvent } from 'aws-lambd
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import * as express from 'express';
+import express from 'express';
 import { Server } from 'http';
 import { createServer, proxy } from 'aws-serverless-express';
 

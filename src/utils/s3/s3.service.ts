@@ -11,7 +11,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as stream from 'stream';
-import { promisify } from 'util';
 
 @Injectable()
 export class S3Service {
@@ -20,23 +19,36 @@ export class S3Service {
   private readonly bucketName: string;
   private readonly region: string;
   private readonly baseUrl: string;
+  private readonly isLocalStack: boolean;
 
   constructor(private configService: ConfigService) {
     this.region = this.configService.get<string>('AWS_REGION', 'us-east-2');
     this.bucketName = this.configService.get<string>('S3_BUCKET_NAME', 'web3-university-dev');
+    this.isLocalStack = process.env.IS_OFFLINE === 'true' || process.env.USE_LOCALSTACK === 'true';
     
     // 创建S3客户端
-    this.s3Client = new S3Client({
+    const clientOptions: any = {
       region: this.region,
-      credentials: process.env.IS_OFFLINE === 'true' 
+      credentials: this.isLocalStack
         ? { accessKeyId: 'local', secretAccessKey: 'local' }
         : undefined
-    });
+    };
+    
+    // 如果使用LocalStack，添加endpoint配置
+    if (this.isLocalStack) {
+      clientOptions.endpoint = 'http://localhost:4566';
+      clientOptions.forcePathStyle = true; // 必须设置为true才能在本地正确工作
+      this.logger.log('使用LocalStack进行本地S3测试');
+    }
+    
+    this.s3Client = new S3Client(clientOptions);
     
     // 设置基础URL
-    this.baseUrl = `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
+    this.baseUrl = this.isLocalStack 
+      ? `http://localhost:4566/${this.bucketName}`
+      : `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     
-    this.logger.log(`S3服务初始化完成, 存储桶: ${this.bucketName}, 区域: ${this.region}`);
+    this.logger.log(`S3服务初始化完成, 存储桶: ${this.bucketName}, 区域: ${this.region}, 本地测试: ${this.isLocalStack}`);
   }
 
   // 获取上传预签名URL
