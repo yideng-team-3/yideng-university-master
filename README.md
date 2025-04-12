@@ -124,16 +124,25 @@ aws configure set region us-east-2
 
 ### 2. 运行 yarn setup:local
 
-该命令会安装好 `docker` 并创建 dynamo db 表
+该命令会安装好 `docker` 并创建 dynamo db 表，还有 S3 的资源
 
-### 3. 使用 Serverless Offline 运行应用
+**注意⚠️：**需要手动改下 `.env.local` 文件中的私钥:
+
+```
+# 修改成自己的 key
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+# 钱包私钥
+CONTRACT_PRIVATE_KEY=YOUR_PRIVATE_KEY
+```
+
+### 3. yarn start:dev
 
 ```bash
 # 安装依赖
 yarn install
 
 # 运行开发服务器
-yarn run offline
+yarn run start:dev
 ```
 
 ### 4. 启动前端应用调用后端接口进行测试
