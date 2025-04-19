@@ -55,7 +55,7 @@ provider:
 
 functions:
   api:
-    handler: dist/lambda.handler
+    handler: dist/src/lambda.handler
     layers:
       - {Ref: DependenciesLambdaLayer}
     events:
